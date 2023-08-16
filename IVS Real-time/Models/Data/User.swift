@@ -109,6 +109,7 @@ class User: ObservableObject {
 
     func toggleAudioMute() {
         audioMuted = !audioMuted
+        // audio device can be muted by setting its gain to 0
         streams
             .compactMap({ $0.device as? IVSAudioDevice })
             .first?

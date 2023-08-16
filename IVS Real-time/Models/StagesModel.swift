@@ -42,6 +42,7 @@ class StagesModel: ObservableObject {
         }
     }
 
+    // Infinite scrolling
     func scroll(_ direction: Direction) {
         if stages.count < 2 { return }
 

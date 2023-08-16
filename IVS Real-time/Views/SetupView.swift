@@ -116,10 +116,20 @@ struct SetupView: View {
                 BottomSheetConfirmationView(
                     isPresent: $isSettingsPresent,
                     title: "Settings",
-                    contentHeight: 300,
+                    contentHeight: 350,
                     dismissTitle: "Dismiss",
                     contentView:
                         VStack {
+                            HStack {
+                                Text("Simulcast")
+                                    .font(Constants.fRobotoMonoMedium18)
+                                    .foregroundColor(Color("debugViewKeys"))
+                                Spacer()
+                                Toggle(isOn: $appModel.isSimulcastOn) {}
+                                    .tint(Color("Orange"))
+                            }
+                            .padding(.bottom, 16)
+
                             HStack {
                                 Text("Maximum bitrate")
                                     .font(Constants.fRobotoMonoMedium18)
@@ -127,12 +137,13 @@ struct SetupView: View {
                                 Spacer()
                                 Text("\(Int(bitrate))k")
                                     .font(Constants.fRobotoMonoBold18)
-                                    .foregroundColor(.black)
+                                    .foregroundColor(appModel.isSimulcastOn ? .gray : .black)
                             }
                             UISliderView(value: $bitrate, minValue: 100, maxValue: 900) {
                                 UserDefaults.standard.setValue(Int(bitrate), forKey: Constants.kMaxBitrate)
                                 appModel.updateVideoConfiguration()
                             }
+                            .disabled(appModel.isSimulcastOn)
 
                             Rectangle()
                                 .fill(Color("BackgroundGray"))

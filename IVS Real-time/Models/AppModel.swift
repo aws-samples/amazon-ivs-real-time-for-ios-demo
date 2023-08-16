@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Network
 import AmazonIVSBroadcast
 
 class AppModel: ObservableObject {
@@ -17,6 +18,12 @@ class AppModel: ObservableObject {
     @Published var isConnected: Bool = false
     @Published var wasConnected: Bool = false
     @Published var isSetupCompleted: Bool = false
+    @Published var isSimulcastOn: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isSimulcastOn, forKey: Constants.kIsSimulcastOn)
+            updateVideoConfiguration()
+        }
+    }
 
     @Published var userWantsToJoinVideoStage: Bool = false
     @Published var userWantsToLeaveStage: Bool = false
@@ -40,13 +47,25 @@ class AppModel: ObservableObject {
     @Published var votingSessionIsActive: Bool = false
     @Published var votingSessionStartedAt: Date?
     @Published var pkVotingWinVisualsActive: Bool = false
+    @Published private(set) var connectedToNetwork: Bool = false {
+        didSet {
+            if connectedToNetwork {
+                onNetworkRestore()
+            } else {
+                onNetworkLoose()
+            }
+        }
+    }
 
     private var stageJoinInProgress: Bool = false
+    private var seatChangeInProgress = false
     var chatModel: ChatModel?
     var shouldJoinActiveStage: Bool = false
     var activeVotingSessionTally: [String: Int]?
     let activeStageBottomSpace: CGFloat = 40
     let dateFormatter = DateFormatter()
+    let monitor = NWPathMonitor()
+    let queue = DispatchQueue(label: "NetworkMonitor")
     var hostAvatar: Avatar? {
         if user.isHost {
             return user.avatar
@@ -73,6 +92,7 @@ class AppModel: ObservableObject {
         self.stagesModel = StagesModel()
         self.stageModel = StageModel()
         self.dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        self.isSimulcastOn = UserDefaults.standard.bool(forKey: Constants.kIsSimulcastOn)
 
         username = user.username
         stageModel.localUser = user
@@ -80,6 +100,8 @@ class AppModel: ObservableObject {
         server.delegate = self
         stagesModel.delegate = self
         stageModel.delegate = self
+
+        checkNetworkConnection()
     }
 
     func generateRandomUsername() {
@@ -95,6 +117,7 @@ class AppModel: ObservableObject {
         }
     }
 
+    // Verify authentication code is valid
     func verify(silent: Bool = false, completion: @escaping (Bool) -> Void) {
         errorMessages.removeAll()
         isLoading = true
@@ -141,7 +164,7 @@ class AppModel: ObservableObject {
 
         if let activeStage = activeStage {
             // Remove other participant by updating stage mode no NONE
-            // because other participant should still remain in stage but stop publishig
+            // because other participant should still remain in stage but stop publishing
             server.updateMode(activeStage.hostId, toStageMode: .none, user: user) { [weak self] success in
                 print("ℹ removed second participant by updating stage mode: \(success ? "✅" : "❌")")
                 DispatchQueue.main.async {
@@ -221,25 +244,14 @@ class AppModel: ObservableObject {
     }
 
     func publishToAudioStage(inAudioSeat: Int) {
-        guard let activeStage = activeStage, let participantId = user.participantId else {
+        guard let participantId = user.participantId else {
             return
         }
 
         stageModel.toggleAudioOnlySubscribe(forParticipant: participantId)
         user.seatIndex = inAudioSeat
-        activeStage.participant(participantId, joinedAudioSeat: inAudioSeat) { [weak self] in
-            guard let user = self?.user, let seats = self?.activeStage?.audioSeats else { return }
-            self?.server.updateSeats(activeStage.hostId, seats: seats, user: user) { [weak self] success in
-                if success {
-                    print("ℹ ✅ audio seats updated")
-                }
 
-                self?.getStages(completion: { [weak self] _ in
-                    self?.toggleLoading(false)
-                })
-            }
-        }
-
+        updateSeat(seatIndex: inAudioSeat)
         DispatchQueue.main.async {
             self.user.isOnStage = true
         }
@@ -248,35 +260,53 @@ class AppModel: ObservableObject {
 
     func changeSeat(to newIndex: Int) {
         guard let activeStage = activeStage,
-              let participantId = user.participantId,
-              let seatIndex = user.seatIndex else {
+              let seatIndex = user.seatIndex,
+            !seatChangeInProgress else {
             return
         }
 
         activeStage.participant(leftAudioSeat: seatIndex) { [weak self] in
-            self?.user.seatIndex = newIndex
-            self?.activeStage?.participant(participantId, joinedAudioSeat: newIndex) { [weak self] in
-                guard let user = self?.user, let seats = self?.activeStage?.audioSeats else { return }
-                self?.server.updateSeats(activeStage.hostId, seats: seats, user: user) { [weak self] success in
-                    if success {
-                        print("ℹ ✅ audio seats updated")
-                    }
+            self?.updateSeat(seatIndex: newIndex)
+        }
+    }
 
-                    self?.getStages(completion: { [weak self] _ in
-                        self?.toggleLoading(false)
-                    })
+    private func updateSeat(seatIndex: Int) {
+        guard let activeStage = activeStage,
+              let participantId = user.participantId, !seatChangeInProgress else {
+            return
+        }
+        seatChangeInProgress = true
+        activeStage.participant(participantId, joinedAudioSeat: seatIndex) { [weak self] in
+            guard let user = self?.user, let seats = self?.activeStage?.audioSeats else { return }
+            self?.server.updateSeats(activeStage.hostId, seats: seats, user: user) { [weak self] success in
+                if success {
+                    self?.user.seatIndex = seatIndex
+                    print("ℹ ✅ audio seats updated")
                 }
+
+                self?.getStages(completion: { [weak self] _ in
+                    self?.toggleLoading(false)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        self?.seatChangeInProgress = false
+                    }
+                })
             }
         }
     }
 
     func updateVideoConfiguration() {
-        do {
-            try stageModel.videoConfig.setMaxBitrate(maxBitrate * 1000)
-        } catch {
-            print("ℹ ❌ Failed to update maxBitrate: \(error)")
+        if isSimulcastOn {
+            stageModel.videoConfig.simulcast.enabled = true
+        } else {
+            do {
+                try stageModel.videoConfig.setMaxBitrate(maxBitrate * 1000)
+                stageModel.videoConfig.simulcast.enabled = false
+            } catch {
+                print("ℹ ❌ Failed to update maxBitrate: \(error)")
+            }
         }
-        stageModel.updateLocalVideoStreamConfiguration(stageModel.videoConfig)
+
+        stageModel.updateLocalVideoStreamConfiguration()
     }
 
     func publishToVideoStage(_ inMode: StageMode) {
@@ -329,6 +359,7 @@ class AppModel: ObservableObject {
             }
 
             if stage.type == .video {
+                // Update stage mode back to NONE
                 server.updateMode(stage.hostId, toStageMode: .none, user: user) { _ in
                     onComplete()
                 }
@@ -338,16 +369,19 @@ class AppModel: ObservableObject {
         }
     }
 
-    func connectToChat(_ hostId: String) {
-        if let oldChatModel = chatModel {
-            print("ℹ disconnecting previous stage chat...")
-            oldChatModel.disconnect()
-            chatModel = nil
-        }
+    func connectToChat(_ hostId: String, reconnect: Bool = false) {
+        print("ℹ connecting to \(reconnect ? "previous" : "new") stage chat...")
 
-        print("ℹ connecting to new stage chat...")
-        self.chatModel = ChatModel()
-        chatModel?.eventDelegate = self
+        if !reconnect {
+            if let oldChatModel = chatModel {
+                print("ℹ disconnecting previous stage chat...")
+                oldChatModel.disconnect()
+                chatModel = nil
+            }
+
+            self.chatModel = ChatModel()
+            chatModel?.eventDelegate = self
+        }
 
         server.createChatToken(for: user, stageHostId: hostId) { [weak self] _, chatAuthToken in
             guard let user = self?.user else { return }
@@ -359,6 +393,7 @@ class AppModel: ObservableObject {
             self?.chatModel?.connectChatRoom(tokenRequest) { error in
                 print("ℹ ❌ Couldn't connect to chat: \(String(describing: error))")
             }
+            self?.stageJoinInProgress = reconnect ? false : self?.stageJoinInProgress ?? false
         }
     }
 
@@ -380,6 +415,7 @@ class AppModel: ObservableObject {
         chatModel?.disconnect()
 
         if user.isHost {
+            // Delete created stage
             server.deleteStage(stageHostId: user.hostId) { [weak self] success in
                 if success {
                     print("ℹ ✅ stage deleted")
@@ -399,6 +435,7 @@ class AppModel: ObservableObject {
 
         } else {
             if let seatIndex = user.seatIndex {
+                // Clear occupied audio seat
                 stage.participant(leftAudioSeat: seatIndex) { [weak self] in
                     guard let user = self?.user, let seats = self?.activeStage?.audioSeats else { return }
 
@@ -424,11 +461,13 @@ class AppModel: ObservableObject {
     }
 
     func appendErrorMessage(_ error: String) {
+        // Show error message
         DispatchQueue.main.async {
             if self.errorMessages.contains(error) { return }
             self.errorMessages.append(error)
         }
 
+        // Hide error message after 10 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
             self.removeErrorMessage(error)
         }
@@ -448,7 +487,7 @@ class AppModel: ObservableObject {
         if activeStage != nil, !user.isHost {
             // Disconnect from old stage and chat
             leaveActiveStage { [weak self] in
-                // Then join new one
+                // Then join the new one
                 self?.join(newStage)
             }
         } else {
@@ -478,14 +517,8 @@ class AppModel: ObservableObject {
         }
 
         toggleLoading(true)
-
-        if stage.type == .video {
-            print("ℹ 📺 joining \(stage.hostId) stage (arn: \(stage.stageArn))...")
-            stageModel.stageType = .video
-        } else {
-            print("ℹ 📻 joining \(stage.hostId) stage (arn: \(stage.stageArn))...")
-            stageModel.stageType = .audio
-        }
+        stageModel.stageType = stage.type
+        print("ℹ \(stage.type == .video ? "📺" : "📻") joining \(stage.hostId) stage (arn: \(stage.stageArn))...")
 
         server.join(stage, user: user) { [weak self] success, participantToken in
             if success {
@@ -572,6 +605,62 @@ class AppModel: ObservableObject {
         user.participant = nil
         stageModel.collectInboundDebugData = true
         stageModel.debugData.clearAll()
+    }
+
+    // MARK: - Network monitoring
+
+    func checkNetworkConnection() {
+        monitor.pathUpdateHandler = { path in
+            DispatchQueue.main.async {
+                if path.status == .satisfied {
+                    self.connectedToNetwork = true
+                } else {
+                    self.connectedToNetwork = false
+                }
+            }
+        }
+        monitor.start(queue: queue)
+    }
+
+    private func onNetworkRestore() {
+        print("ℹ ✅ Network restored")
+        if activeStage != nil, !stageJoinInProgress {
+            reconnectToStage()
+            errorMessages = []
+        }
+    }
+
+    private func onNetworkLoose() {
+        print("ℹ ⚠️ Network lost")
+        appendErrorMessage("Network was lost")
+        toggleLoading(true)
+        stageJoinInProgress = false
+    }
+
+    private func reconnectToStage() {
+        guard let stage = activeStage else {
+            print("ℹ ❌ Can't reconnect - no active stage set")
+            toggleLoading(false)
+            return
+        }
+
+        connectToChat(stage.hostId, reconnect: true)
+        stageJoinInProgress = true
+
+        if user.isHost {
+            if stage.type == .video {
+                publishToVideoStage(.none)
+            }
+            if stage.type == .audio {
+                publishToAudioStage(inAudioSeat: 0)
+            }
+        } else {
+            if user.isPublishing {
+                stageModel.publish(user)
+            }
+        }
+
+        toggleLoading(false)
     }
 }
 

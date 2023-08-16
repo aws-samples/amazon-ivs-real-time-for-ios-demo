@@ -8,6 +8,7 @@
 import AVFoundation
 
 func checkAVPermissions(_ result: @escaping (Bool) -> Void) {
+    // Make sure we have both audio and video permissions before setting up the broadcast session.
     checkOrGetPermission(for: .video) { granted in
         guard granted else {
             result(false)

@@ -34,4 +34,5 @@ struct Constants {
     static let kCustomerCode = "k_customer_code"
     static let kApiKey = "k_api_key"
     static let kMaxBitrate = "k_max_bitrate"
+    static let kIsSimulcastOn = "k_is_simulcast_on"
 }
