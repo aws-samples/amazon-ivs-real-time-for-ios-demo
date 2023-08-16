@@ -20,6 +20,8 @@ extension StageModel: IVSErrorDelegate {
     }
 }
 
+// These callbacks are triggered by `IVSStage.refreshStrategy()`
+// Call `IVSStage.refreshStrategy()` whenever we want to update the answers to these questions
 extension StageModel: IVSStageStrategy {
     func stage(_ stage: IVSStage, shouldSubscribeToParticipant participant: IVSParticipantInfo) -> IVSStageSubscribeType {
         guard let data = dataForParticipant(participant.participantId) else {
@@ -36,6 +38,7 @@ extension StageModel: IVSStageStrategy {
     }
 
     func stage(_ stage: IVSStage, shouldPublishParticipant participant: IVSParticipantInfo) -> Bool {
+        // start/stop publishing
         return localUserWantsPublish
     }
 
@@ -52,6 +55,7 @@ extension StageModel: IVSStageRenderer {
         print("ℹ participant \(participant.participantId) did join")
 
         if participant.isLocal {
+            // Update local participant
             self.participantUsers[0].participantId = participant.participantId
             self.participantUsers[0].participant = participant
         } else {
@@ -60,6 +64,7 @@ extension StageModel: IVSStageRenderer {
                 return
             }
 
+            // Create and store User for newly joined participant
             let newUser = User(isLocal: false,
                                username: participant.attributes["username"] ?? "",
                                avatar: Avatar(
@@ -77,6 +82,7 @@ extension StageModel: IVSStageRenderer {
         print("ℹ participant \(participant.participantId) did leave")
 
         if participant.isLocal {
+            // Reset local participant ID
             self.participantUsers[0].participantId = nil
         } else {
             if let index = participantUsers.firstIndex(where: { $0.participantId == participant.participantId }) {
@@ -124,6 +130,7 @@ extension StageModel: IVSStageRenderer {
         }
 
         mutatingParticipant(participant.participantId) { data in
+            // Use unique device locator to remove designated streams for participant
             let oldUrns = streams.map { $0.device.descriptor().urn }
             data.streams.removeAll(where: { stream in
                 return oldUrns.contains(stream.device.descriptor().urn)
@@ -161,13 +168,15 @@ extension StageModel: IVSStageRenderer {
 
 extension StageModel: IVSStageStreamDelegate {
     func streamDidChangeIsMuted(_ stream: IVSStageStream) {
-        print("ℹ \(stream.description) DidChangeIsMuted \(stream.isMuted)")
+        print("ℹ \(stream.description) didChangeIsMuted \(stream.isMuted)")
     }
 
     func stream(_ stream: IVSStageStream, didGenerateRTCStats stats: [String: [String: String]]) {
         parseRTCStats(for: stream, stats: stats)
     }
 }
+
+// MARK: - State extensions
 
 extension IVSStageConnectionState {
     var text: String {

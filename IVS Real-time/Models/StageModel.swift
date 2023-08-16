@@ -17,9 +17,6 @@ protocol StageModelDelegate: AnyObject {
 }
 
 class StageModel: NSObject, ObservableObject {
-
-    var localUser: User
-
     @Published var primaryCameraName = "None"
     @Published var primaryMicrophoneName = "None"
     @Published var sessionRunning: Bool = false
@@ -29,19 +26,26 @@ class StageModel: NSObject, ObservableObject {
     @Published var localUserWantsPublish: Bool = false
     @Published var remoteAudioMuted: Bool = false
 
+    var localUser: User
+    var stageType: StageType = .video
+    var localStreams: [IVSLocalStageStream] = []
+    var delegate: StageModelDelegate?
     var debugData: DebugData
     var collectInboundDebugData: Bool = true
 
-    var stageType: StageType = .video
+    let deviceDiscovery = IVSDeviceDiscovery()
+    let deviceSlotName = UUID().uuidString
+
     private var debugTimer: Timer?
+    private(set) var videoConfig = IVSLocalStageStreamVideoConfiguration()
+    private var shouldRepublishWhenEnteringForeground = false
+    private var stage: IVSStage?
 
     var participantUsers: [User] = [] {
         didSet {
             delegate?.participantUsersChanged()
         }
     }
-
-    private(set) var videoConfig = IVSLocalStageStreamVideoConfiguration()
 
     var selectedCamera: IVSDeviceDescriptor? {
         didSet {
@@ -54,14 +58,6 @@ class StageModel: NSObject, ObservableObject {
             primaryMicrophoneName = selectedMicrophone?.friendlyName ?? "None"
         }
     }
-
-    private var shouldRepublishWhenEnteringForeground = false
-    private var stage: IVSStage?
-    var localStreams: [IVSLocalStageStream] = []
-    let deviceDiscovery = IVSDeviceDiscovery()
-    let deviceSlotName = UUID().uuidString
-    var currentJoinToken: String = ""
-    var delegate: StageModelDelegate?
 
     override init() {
         self.localUser = User(isLocal: true, username: "", avatar: Avatar())
@@ -95,19 +91,17 @@ class StageModel: NSObject, ObservableObject {
     }
 
     private func setupLocalUser() {
-        setLocalCamera(to: .front)
+        setupLocalCamera(to: .front)
 
-#if targetEnvironment(simulator)
-        let devices: [Any] = []
-#else
-        let devices = deviceDiscovery.listLocalDevices()
-#endif
-
+        // Setup local audio stream for publishing microphone
+        let devices = getLocalDevices()
         if let microphone = devices
             .compactMap({ $0 as? IVSMicrophone })
             .first {
             microphone.delegate = self
+            // Enable echo cancellation for microphone device
             microphone.isEchoCancellationEnabled = true
+            // Add stream with local audio device to localStreams
             self.localStreams.append(IVSLocalStageStream(device: microphone))
         }
 
@@ -117,9 +111,30 @@ class StageModel: NSObject, ObservableObject {
         localUser.streams = self.localStreams
     }
 
-    @objc private func applicationDidEnterBackground() {
-        let connectingOrConnected = (stageConnectionState == .connecting) || (stageConnectionState == .connected)
+    private func setupLocalCamera(to position: IVSDevicePosition) {
+        if let camera = getLocalDevices().compactMap({ $0 as? IVSCamera }).first {
+            if let cameraSource = camera.listAvailableInputSources().first(where: { $0.position == position }) {
+                print("ℹ local camera source: \(cameraSource)")
+                camera.setPreferredInputSource(cameraSource) { [weak self] in
+                    if let error = $0 {
+                        print("ℹ ❌ Error on setting preferred input source: \(error)")
+                    } else {
+                        self?.selectedCamera = cameraSource
+                    }
+                    print("ℹ localy selected camera: \(String(describing: self?.selectedCamera))")
+                }
+            }
+            self.localStreams.append(IVSLocalStageStream(device: camera, configuration: self.videoConfig))
+        }
+    }
 
+    @objc private func applicationDidEnterBackground() {
+        // By default any active broadcast will stop, and all I/O devices will be shutdown until
+        // the app is foregrounded again.
+        // This behaviour can be changed by using -createAppBackgroundImageSourceWithAttemptTrim:OnComplete:
+        // (read more in the documentation)
+
+        let connectingOrConnected = (stageConnectionState == .connecting) || (stageConnectionState == .connected)
         if connectingOrConnected {
             shouldRepublishWhenEnteringForeground = localUserWantsPublish
             localUserWantsPublish = false
@@ -130,6 +145,7 @@ class StageModel: NSObject, ObservableObject {
                         data.requiresAudioOnly = true
                     }
                 }
+            // after changes, refresh stage strategy state
             stage?.refreshStrategy()
         }
     }
@@ -147,6 +163,7 @@ class StageModel: NSObject, ObservableObject {
                         data.requiresAudioOnly = stageType == .audio
                     }
                 }
+            // after changes, refresh stage strategy state
             stage?.refreshStrategy()
         }
     }
@@ -160,6 +177,7 @@ class StageModel: NSObject, ObservableObject {
     }
 
     func joinAsParticipant(_ token: String, onComplete: (Bool) -> Void) {
+        print("ℹ Joining stage as participant...")
         joinStage(token, onComplete: onComplete)
     }
 
@@ -184,13 +202,15 @@ class StageModel: NSObject, ObservableObject {
             self.stage = nil
             let stage = try IVSStage(token: token, strategy: self)
 
+            // set created stage IVSStageRenderer to self to get all the necessary information about it
             stage.addRenderer(self)
             stage.errorDelegate = self
+
             try stage.join()
             self.stage = stage
 
             print("ℹ ✅ stage joined")
-            currentJoinToken = token
+
             DispatchQueue.main.async {
                 self.sessionRunning = true
             }
@@ -244,12 +264,14 @@ class StageModel: NSObject, ObservableObject {
     }
 
     func toggleLocalAudioMute() {
+        // Find local audio device and update the mute state
         localStreams
             .filter { $0.device is IVSAudioDevice }
             .forEach {
                 $0.setMuted(!$0.isMuted)
                 localUserAudioMuted = $0.isMuted
                 if let audioDevice = $0.device as? IVSAudioDevice {
+                    // audio device can be muted by setting its gain to 0
                     audioDevice.setGain(localUserAudioMuted ? 0 : 1)
                 }
             }
@@ -259,9 +281,11 @@ class StageModel: NSObject, ObservableObject {
     }
 
     func toggleLocalVideoMute() {
+        // Find local image device and update the mute state
         localStreams
             .filter { $0.device is IVSImageDevice }
             .forEach {
+                // image device mute state can be toggled by using `setMuted(Bool)`
                 $0.setMuted(!$0.isMuted)
                 localUserVideoMuted = $0.isMuted
             }
@@ -282,57 +306,16 @@ class StageModel: NSObject, ObservableObject {
 
     func swapCamera() {
         print("ℹ swapping camera to \(selectedCamera?.position == .front ? "back" : "front")")
-        setLocalCamera(to: selectedCamera?.position == .front ? .back : .front)
+        setupLocalCamera(to: selectedCamera?.position == .front ? .back : .front)
     }
 
-    private func setLocalCamera(to position: IVSDevicePosition) {
-#if targetEnvironment(simulator)
-        let devices: [Any] = []
-#else
-        let devices = deviceDiscovery.listLocalDevices()
-#endif
-
-        if let camera = devices.compactMap({ $0 as? IVSCamera }).first {
-            if let cameraSource = camera.listAvailableInputSources().first(where: { $0.position == position }) {
-                print("ℹ local camera source: \(cameraSource)")
-                camera.setPreferredInputSource(cameraSource) { [weak self] in
-                    if let error = $0 {
-                        print("ℹ ❌ Error on setting preferred input source: \(error)")
-                    } else {
-                        self?.selectedCamera = cameraSource
-                    }
-                    print("ℹ localy selected camera: \(String(describing: self?.selectedCamera))")
-                }
-            }
-            self.localStreams.append(IVSLocalStageStream(device: camera, configuration: self.videoConfig))
-        }
-    }
-
-    func updateLocalVideoStreamConfiguration(_ config: IVSLocalStageStreamVideoConfiguration) {
-        videoConfig = config
+    func updateLocalVideoStreamConfiguration() {
         localStreams
             .filter { $0.device is IVSImageDevice }
             .forEach {
                 print("Updating VideoConfig for \($0.device.descriptor().friendlyName)")
                 $0.setConfiguration(videoConfig)
             }
-    }
-
-    func listAvailableDevices() -> [IVSDeviceDescriptor] {
-#if targetEnvironment(simulator)
-        let devices: [Any] = []
-#else
-        let devices = deviceDiscovery.listLocalDevices()
-#endif
-
-        return devices.flatMap { device -> [IVSDeviceDescriptor] in
-            if let camera = device as? IVSCamera {
-                return camera.listAvailableInputSources()
-            } else if let microphone = device as? IVSMicrophone {
-                return microphone.listAvailableInputSources()
-            }
-            return []
-        }
     }
 
     func setCamera(_ device: IVSDeviceDescriptor?) {
@@ -343,18 +326,21 @@ class StageModel: NSObject, ObservableObject {
         setDevice(device, outDevice: \Self.selectedMicrophone, type: IVSMicrophone.self, logSource: "setMicrophone")
     }
 
+    private func getLocalDevices() -> [Any] {
+#if targetEnvironment(simulator)
+        // We can't use IVSDeviceDiscovery when using simulator
+        return []
+#else
+        // List available devices
+        return deviceDiscovery.listLocalDevices()
+#endif
+    }
+
     private func setDevice<DeviceType: IVSMultiSourceDevice>(_ inDevice: IVSDeviceDescriptor?,
                                                              outDevice: ReferenceWritableKeyPath<StageModel, IVSDeviceDescriptor?>,
                                                              type: DeviceType.Type,
                                                              logSource: String) {
-
-#if targetEnvironment(simulator)
-        let devices: [Any] = []
-#else
-        let devices = deviceDiscovery.listLocalDevices()
-#endif
-
-        guard let localDevice = devices.compactMap({ $0 as? DeviceType }).first else { return }
+        guard let localDevice = getLocalDevices().compactMap({ $0 as? DeviceType }).first else { return }
 
         if let inputSource = inDevice {
             localDevice.setPreferredInputSource(inputSource) { [weak self] in
@@ -385,6 +371,7 @@ class StageModel: NSObject, ObservableObject {
 
     func toggleSubscribed(forParticipant participantId: String) {
         mutatingParticipant(participantId) { $0.wantsSubscribed.toggle() }
+        // Call `refreshStrategy` to trigger a refresh of all the `IVSStageStrategy` functions
         stage?.refreshStrategy()
     }
 
@@ -395,6 +382,7 @@ class StageModel: NSObject, ObservableObject {
             $0.wantsAudioOnly.toggle()
         }
         if shouldRefresh {
+            // Call `refreshStrategy` to trigger a refresh of all the `IVSStageStrategy` functions
             stage?.refreshStrategy()
         }
     }
@@ -419,13 +407,19 @@ class StageModel: NSObject, ObservableObject {
         self.participantUsers[index] = participant
     }
 
+    // MARK: - RTC stats
+    // To obtain RTC stats, call requestRTCStats() on IVSStageStream and wait for
+    // the stream(didGenerateRTCStats:) callback on IVSStageStreamDelegate
+
     func startRTCStats() {
+        // get stats each second
         debugTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { [weak self] _ in
             self?.getRTCStats()
         })
     }
 
     func endRTCStats() {
+        // stop getting stats
         debugTimer?.invalidate()
     }
 

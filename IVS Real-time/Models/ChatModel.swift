@@ -44,7 +44,7 @@ class ChatModel: ObservableObject, Equatable, Hashable {
         Task(priority: .background) {
             room?.connect({ _, error in
                 if let error = error {
-                    print("❌ Could not connect to chat room: \(error)")
+                    print("ℹ ❌ Could not connect to chat room: \(error)")
                     onError(error.localizedDescription)
                 }
             })
@@ -65,7 +65,7 @@ class ChatModel: ObservableObject, Equatable, Hashable {
             onComplete(nil)
         },
                           onFailure: { chatError in
-            print("❌ Error sending message: \(chatError)")
+            print("ℹ ❌ Error sending message: \(chatError)")
             onComplete(chatError.localizedDescription)
         })
     }

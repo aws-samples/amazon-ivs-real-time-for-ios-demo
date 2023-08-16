@@ -17,6 +17,7 @@ class ServerModel: ObservableObject {
     var delegate: ServerDelegate?
     var decoder = JSONDecoder()
 
+    // Verify authentication code
     func verify(silent: Bool, _ onComplete: @escaping (Bool) -> Void) {
         send(silent: silent, "GET", endpoint: "verify", body: nil) { _, _, error in
             if let error = error {
