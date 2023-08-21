@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct Constants {
-    static let sdk_version = "1.8.1"
     static let API_URL = "cloudfront.net"
 
     // App fonts

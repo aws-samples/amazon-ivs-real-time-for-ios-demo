@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AmazonIVSBroadcast
 
 enum StageType: String, Decodable {
     case video = "VIDEO", audio = "AUDIO"
@@ -139,7 +140,7 @@ class DebugData: ObservableObject {
         return participantStats.filter({ $0.key.contains("video") || $0.key.contains("camera") })
     }
 
-    var sdkVersion: String = Constants.sdk_version
+    var sdkVersion: String = IVSBroadcastSession.sdkVersion
 
     func clearStats() {
         for stat in participantStats {
