@@ -125,7 +125,7 @@ struct AudioListenerDebugDataView: View {
     @StateObject var debugData: DebugData
 
     var body: some View {
-        @State var hostData = debugData.participantStats
+        let hostData = debugData.participantStats
             .filter({ $0.key.contains("audio") })
             .first(where: { $0.value.username == appModel.activeStageHostParticipant?.username })
 
