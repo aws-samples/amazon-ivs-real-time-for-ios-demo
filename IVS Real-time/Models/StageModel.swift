@@ -461,7 +461,8 @@ class StageModel: NSObject, ObservableObject {
     }
 
     private func parseBaseData(for stream: IVSStageStream, from stats: [String: [String: String]]) {
-        let candidatePair = stats["candidate-pair"]
+        let selectedCandidatePairId = stats["T01"]?["selectedCandidatePairId"] ?? ""
+        let candidatePair = stats[selectedCandidatePairId]
         let remoteInbound = stats["remote-inbound-rtp"]
         let inbound = stats["inbound-rtp"]
 
