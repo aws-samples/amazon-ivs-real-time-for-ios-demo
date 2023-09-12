@@ -74,14 +74,14 @@ struct ChatView: View {
                 .padding(.bottom, 5)
             }
             .background(
-                BackgroundView()
+                backgroundView()
             )
             .padding(.leading, 4)
         }
     }
 
     @ViewBuilder
-    private func BackgroundView() -> some View {
+    private func backgroundView() -> some View {
         if stage.mode == .pk {
             Color("ButtonBackgroundGray")
                 .opacity(0.8)
