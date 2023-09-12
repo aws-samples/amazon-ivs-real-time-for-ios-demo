@@ -13,7 +13,7 @@ struct UsernameProvider {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
                 let jsonResult = try JSONSerialization.jsonObject(with: data, options: .mutableLeaves)
-                if let jsonResult = jsonResult as? Dictionary<String, AnyObject>,
+                if let jsonResult = jsonResult as? [String: AnyObject],
                    let fruits = jsonResult["fruits"] as? [String] {
                     return fruits
                 } else {

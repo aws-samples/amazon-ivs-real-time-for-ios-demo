@@ -113,7 +113,8 @@ class StageModel: NSObject, ObservableObject {
 
     private func setupLocalCamera(to position: IVSDevicePosition) {
         if let camera = getLocalDevices().compactMap({ $0 as? IVSCamera }).first {
-            if let cameraSource = camera.listAvailableInputSources().first(where: { $0.position == position }) {
+            if let cameraSource = camera.listAvailableInputSources()
+                .first(where: { position == .back ? $0.position == position && $0.isDefault : $0.position == position }) {
                 print("ℹ local camera source: \(cameraSource)")
                 camera.setPreferredInputSource(cameraSource) { [weak self] in
                     if let error = $0 {
