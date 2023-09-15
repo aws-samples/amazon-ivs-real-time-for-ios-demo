@@ -55,6 +55,7 @@ struct IVSRealTimeApp: App {
                 }
                 .navigationBarHidden(true)
             }
+            .navigationViewStyle(.stack)
         }
     }
 }
