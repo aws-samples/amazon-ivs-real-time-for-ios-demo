@@ -29,6 +29,18 @@ class User: ObservableObject {
         return participantId != nil && participantToken != nil
     }
 
+    var videoRequestedAt: Date?
+    var videoReceivedAt: Date? {
+        didSet {
+            if let videoRequestedAt = videoRequestedAt,
+                let diff = videoReceivedAt?.timeIntervalSince(videoRequestedAt) {
+                timeToVideo = "\(Int(diff.rounded())) TTV"
+            }
+        }
+    }
+    @Published var timeToVideo: String?
+    @Published var latency: String?
+
     @Published var isOnStage: Bool = false
     @Published var videoOn: Bool = true
     @Published var audioOn: Bool = true

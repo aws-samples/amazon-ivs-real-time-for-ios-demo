@@ -18,13 +18,30 @@ struct StageParticipantView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             if let preview = preview {
-                IVSImagePreviewViewWrapper(previewView: preview)
+                GeometryReader { geometry in
+                    IVSImagePreviewViewWrapper(previewView: preview)
+                        .overlay(alignment: .topTrailing) {
+                            if appModel.isStatsOn {
+                                Text("\(participant.timeToVideo != nil ? "[\(participant.timeToVideo!)]" : "") \(participant.latency != nil ? " [\(participant.latency!)]" : "")")
+                                    .font(Constants.fInterBold14)
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black, radius: 2, x: 1, y: 1)
+                                    .padding(.horizontal, geometry.size.width * 0.05)
+                                    .padding(.top, geometry.size.height * 0.08)
+                                    .onAppear {
+                                        appModel.stageModel.startRTCStats()
+                                    }
+                            }
+                        }
+                        .onAppear {
+                            participant.videoRequestedAt = Date()
+                        }
+                }
             }
 
             if participant.videoMuted || (participant.isLocal && appModel.stageModel.localUserVideoMuted) {
                 ZStack {
                     Color.black
-
                     Image("video-camera-slash")
                         .resizable()
                         .frame(width: 60, height: 60)

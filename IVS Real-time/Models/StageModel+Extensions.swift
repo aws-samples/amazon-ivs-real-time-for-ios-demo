@@ -96,13 +96,13 @@ extension StageModel: IVSStageRenderer {
         print("ℹ participant \(participant.participantId) didChangePublishState to '\(publishState.text)'")
         mutatingParticipant(participant.participantId) { data in
             data.publishState = publishState
+            data.videoRequestedAt = publishState == .published ? Date() : nil
         }
         self.delegate?.participantJoined(participant)
     }
 
     func stage(_ stage: IVSStage, participant: IVSParticipantInfo, didChange subscribeState: IVSParticipantSubscribeState) {
         print("ℹ participant \(participant.participantId) didChangeSubscribeState to '\(subscribeState.text)'")
-
     }
 
     func stage(_ stage: IVSStage, participant: IVSParticipantInfo, didAdd streams: [IVSStageStream]) {
@@ -114,6 +114,10 @@ extension StageModel: IVSStageRenderer {
         }
 
         mutatingParticipant(participant.participantId) { data in
+            if streams.contains(where: { [.camera, .userImage].contains($0.device.descriptor().type) }) {
+                print("⚠️ stream image device received \(Date().timeIntervalSinceNow)")
+                data.videoReceivedAt = Date()
+            }
             data.streams.append(contentsOf: streams)
             data.streams.forEach { stream in
                 stream.delegate = self
@@ -135,6 +139,7 @@ extension StageModel: IVSStageRenderer {
             data.streams.removeAll(where: { stream in
                 return oldUrns.contains(stream.device.descriptor().urn)
             })
+            data.videoReceivedAt = nil
         }
         delegate?.participantLeftOrStoppedPublishing(participant)
     }

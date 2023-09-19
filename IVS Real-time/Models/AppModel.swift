@@ -97,6 +97,7 @@ class AppModel: ObservableObject {
         self.stagesModel = StagesModel()
         self.stageModel = StageModel()
         self.dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        UserDefaults.standard.register(defaults: [Constants.kIsStatsOn: true])
         self.isSimulcastOn = UserDefaults.standard.bool(forKey: Constants.kIsSimulcastOn)
         self.isStatsOn = UserDefaults.standard.bool(forKey: Constants.kIsStatsOn)
 

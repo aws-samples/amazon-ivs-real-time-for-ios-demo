@@ -26,11 +26,12 @@ class StageModel: NSObject, ObservableObject {
     @Published var localUserWantsPublish: Bool = false
     @Published var remoteAudioMuted: Bool = false
 
+    @ObservedObject var debugData: DebugData
+
     var localUser: User
     var stageType: StageType = .video
     var localStreams: [IVSLocalStageStream] = []
     var delegate: StageModelDelegate?
-    var debugData: DebugData
     var collectInboundDebugData: Bool = true
 
     let deviceDiscovery = IVSDeviceDiscovery()
@@ -262,6 +263,7 @@ class StageModel: NSObject, ObservableObject {
             self.localUserWantsPublish = false
         }
         stage = nil
+        endRTCStats()
     }
 
     func toggleLocalAudioMute() {
@@ -414,6 +416,7 @@ class StageModel: NSObject, ObservableObject {
 
     func startRTCStats() {
         // get stats each second
+        guard debugTimer == nil else { return }
         debugTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { [weak self] _ in
             self?.getRTCStats()
         })
@@ -422,6 +425,7 @@ class StageModel: NSObject, ObservableObject {
     func endRTCStats() {
         // stop getting stats
         debugTimer?.invalidate()
+        debugTimer = nil
     }
 
     func createRTCStats(for stream: IVSStageStream, username: String?) {
@@ -475,6 +479,12 @@ class StageModel: NSObject, ObservableObject {
                 self.debugData.participantStats[stream.device.tag()]?.medianLatency = "-"
             }
             self.debugData.participantStats[stream.device.tag()]?.packetLossDown = remoteInbound?["packetsLost"] ?? inbound?["packetsLost"]
+
+            for user in self.participantUsers {
+                user.latency = self.debugData.videoParticipanStats
+                    .filter({ $0.value.username == user.username })
+                    .first?.value.medianLatency
+            }
         }
     }
 

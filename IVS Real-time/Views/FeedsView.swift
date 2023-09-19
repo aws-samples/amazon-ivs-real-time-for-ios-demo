@@ -222,9 +222,6 @@ struct FeedsView: View {
                 .onAppear {
                     stageModel.startRTCStats()
                 }
-                .onDisappear {
-                    stageModel.endRTCStats()
-                }
             }
         }
     }

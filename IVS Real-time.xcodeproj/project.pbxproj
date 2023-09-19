@@ -43,6 +43,7 @@
 		4B92D07D29E8240700DD440D /* DeviceShake.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B92D07C29E8240700DD440D /* DeviceShake.swift */; };
 		4B92D07F29E8295000DD440D /* RobotoMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4B92D07E29E8295000DD440D /* RobotoMono-Medium.ttf */; };
 		4B92D08129EFB8A600DD440D /* DebugDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B92D08029EFB8A600DD440D /* DebugDataView.swift */; };
+		4BABD0772AB9959800831B32 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BABD0762AB9959800831B32 /* SettingsView.swift */; };
 		4BB7960C29D6EE7A005A4521 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB7960B29D6EE7A005A4521 /* AvatarView.swift */; };
 		4BB7960E29D6F015005A4521 /* UIColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB7960D29D6F015005A4521 /* UIColor.swift */; };
 		4BB7961029D6FAE2005A4521 /* StageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BB7960F29D6FAE2005A4521 /* StageModel.swift */; };
@@ -104,6 +105,7 @@
 		4B92D07C29E8240700DD440D /* DeviceShake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceShake.swift; sourceTree = "<group>"; };
 		4B92D07E29E8295000DD440D /* RobotoMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "RobotoMono-Medium.ttf"; sourceTree = "<group>"; };
 		4B92D08029EFB8A600DD440D /* DebugDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDataView.swift; sourceTree = "<group>"; };
+		4BABD0762AB9959800831B32 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4BB7960B29D6EE7A005A4521 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		4BB7960D29D6F015005A4521 /* UIColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIColor.swift; sourceTree = "<group>"; };
 		4BB7960F29D6FAE2005A4521 /* StageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageModel.swift; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 				4BB7FD3429D2BB9400E2894D /* IVSRealTimeApp.swift */,
 				4BCC450529D2BFEC003F371E /* WelcomeView.swift */,
 				4BCC450729D2C45E003F371E /* SetupView.swift */,
+				4BABD0762AB9959800831B32 /* SettingsView.swift */,
 				4B10632729D31FAE00242A05 /* FeedsView.swift */,
 				4BCC450429D2BFA5003F371E /* Stages */,
 				4BCC450929D2C4F3003F371E /* Components */,
@@ -462,6 +465,7 @@
 				4B10633629D41CA600242A05 /* PKView.swift in Sources */,
 				4B32DFF229F7FF7000EAA130 /* VoteBarView.swift in Sources */,
 				4B10635729D47F4A00242A05 /* ChatModel.swift in Sources */,
+				4BABD0772AB9959800831B32 /* SettingsView.swift in Sources */,
 				4BB7961829DAF408005A4521 /* ErrorView.swift in Sources */,
 				4BFB13D729D3100E00B9AB5E /* UsernameProvider.swift in Sources */,
 				4B10632A29D3200200242A05 /* VideoStageView.swift in Sources */,
