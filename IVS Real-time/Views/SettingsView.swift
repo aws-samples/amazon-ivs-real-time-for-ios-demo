@@ -21,21 +21,21 @@ struct SettingsView: View {
             contentView:
                 VStack {
                     HStack {
-                        Text("Simulcast")
+                        Text("Video stats")
                             .font(Constants.fRobotoMonoMedium18)
                             .foregroundColor(Color("debugViewKeys"))
                         Spacer()
-                        Toggle(isOn: $appModel.isSimulcastOn) {}
+                        Toggle(isOn: $appModel.isStatsOn) {}
                             .tint(Color("Orange"))
                     }
                     .padding(.bottom, 16)
 
                     HStack {
-                        Text("Show video stats")
+                        Text("Simulcast")
                             .font(Constants.fRobotoMonoMedium18)
                             .foregroundColor(Color("debugViewKeys"))
                         Spacer()
-                        Toggle(isOn: $appModel.isStatsOn) {}
+                        Toggle(isOn: $appModel.isSimulcastOn) {}
                             .tint(Color("Orange"))
                     }
                     .padding(.bottom, 16)

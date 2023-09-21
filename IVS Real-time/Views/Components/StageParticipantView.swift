@@ -28,6 +28,9 @@ struct StageParticipantView: View {
                                     .shadow(color: .black, radius: 2, x: 1, y: 1)
                                     .padding(.horizontal, geometry.size.width * 0.05)
                                     .padding(.top, geometry.size.height * 0.08)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
+                                    .frame(alignment: .trailing)
                                     .onAppear {
                                         appModel.stageModel.startRTCStats()
                                     }

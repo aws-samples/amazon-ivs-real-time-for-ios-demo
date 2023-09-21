@@ -109,20 +109,29 @@ extension StageModel: IVSStageRenderer {
         print("ℹ participant \(participant.participantId) didAdd \(streams.count) streams")
 
         for stream in streams {
+            if let imageDevice = stream.device as? IVSImageDevice {
+                imageDevice.setOnFrameCallback { [weak self] frame in
+                    self?.onFrame(for: participant.participantId)
+                    imageDevice.setOnFrameCallback(nil)
+                }
+            }
+
             let username = participantUsers.first(where: { $0.participant == participant })?.username
             createRTCStats(for: stream, username: username)
         }
 
         mutatingParticipant(participant.participantId) { data in
-            if streams.contains(where: { [.camera, .userImage].contains($0.device.descriptor().type) }) {
-                print("⚠️ stream image device received \(Date().timeIntervalSinceNow)")
-                data.videoReceivedAt = Date()
-            }
             data.streams.append(contentsOf: streams)
             data.streams.forEach { stream in
                 stream.delegate = self
                 data.setAudioStatsCallback(for: stream)
             }
+        }
+    }
+
+    func onFrame(for participantId: String) {
+        mutatingParticipant(participantId) { data in
+            data.videoReceivedAt = Date()
         }
     }
 
