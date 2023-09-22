@@ -24,6 +24,11 @@ class AppModel: ObservableObject {
             updateVideoConfiguration()
         }
     }
+    @Published var isStatsOn: Bool = true {
+        didSet {
+            UserDefaults.standard.set(isStatsOn, forKey: Constants.kIsStatsOn)
+        }
+    }
 
     @Published var userWantsToJoinVideoStage: Bool = false
     @Published var userWantsToLeaveStage: Bool = false
@@ -92,7 +97,9 @@ class AppModel: ObservableObject {
         self.stagesModel = StagesModel()
         self.stageModel = StageModel()
         self.dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        UserDefaults.standard.register(defaults: [Constants.kIsStatsOn: true])
         self.isSimulcastOn = UserDefaults.standard.bool(forKey: Constants.kIsSimulcastOn)
+        self.isStatsOn = UserDefaults.standard.bool(forKey: Constants.kIsStatsOn)
 
         username = user.username
         stageModel.localUser = user

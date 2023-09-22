@@ -11,7 +11,6 @@ struct SetupView: View {
     @EnvironmentObject var appModel: AppModel
     @State var isSettingsPresent: Bool = false
     @State var isStageSelectionPresent: Bool = false
-    @State var bitrate: Float = 0
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -113,60 +112,7 @@ struct SetupView: View {
             .frame(maxHeight: .infinity)
 
             if isSettingsPresent {
-                BottomSheetConfirmationView(
-                    isPresent: $isSettingsPresent,
-                    title: "Settings",
-                    contentHeight: 350,
-                    dismissTitle: "Dismiss",
-                    contentView:
-                        VStack {
-                            HStack {
-                                Text("Simulcast")
-                                    .font(Constants.fRobotoMonoMedium18)
-                                    .foregroundColor(Color("debugViewKeys"))
-                                Spacer()
-                                Toggle(isOn: $appModel.isSimulcastOn) {}
-                                    .tint(Color("Orange"))
-                            }
-                            .padding(.bottom, 16)
-
-                            HStack {
-                                Text("Maximum bitrate")
-                                    .font(Constants.fRobotoMonoMedium18)
-                                    .foregroundColor(Color("debugViewKeys"))
-                                Spacer()
-                                Text("\(Int(bitrate))k")
-                                    .font(Constants.fRobotoMonoBold18)
-                                    .foregroundColor(appModel.isSimulcastOn ? .gray : .black)
-                            }
-                            UISliderView(value: $bitrate, minValue: 100, maxValue: 900) {
-                                UserDefaults.standard.setValue(Int(bitrate), forKey: Constants.kMaxBitrate)
-                                appModel.updateVideoConfiguration()
-                            }
-                            .disabled(appModel.isSimulcastOn)
-
-                            Rectangle()
-                                .fill(Color("BackgroundGray"))
-                                .frame(height: 1)
-                                .padding(.top, 20)
-                                .padding(.bottom, 30)
-
-                            Button(action: {
-                                withAnimation {
-                                    isSettingsPresent.toggle()
-                                }
-                                appModel.disconnect()
-                            }) {
-                                Text("Sign out")
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
-                            }
-                            .modifier(PrimaryButton(color: Color("Red"), textColor: Color.white))
-                        }
-                )
-                .onAppear {
-                    bitrate = Float(appModel.maxBitrate)
-                }
+                SettingsView(isPresent: $isSettingsPresent)
             }
 
             if isStageSelectionPresent {

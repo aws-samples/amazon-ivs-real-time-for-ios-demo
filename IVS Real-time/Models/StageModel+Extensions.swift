@@ -96,19 +96,26 @@ extension StageModel: IVSStageRenderer {
         print("ℹ participant \(participant.participantId) didChangePublishState to '\(publishState.text)'")
         mutatingParticipant(participant.participantId) { data in
             data.publishState = publishState
+            data.videoRequestedAt = publishState == .published ? Date() : nil
         }
         self.delegate?.participantJoined(participant)
     }
 
     func stage(_ stage: IVSStage, participant: IVSParticipantInfo, didChange subscribeState: IVSParticipantSubscribeState) {
         print("ℹ participant \(participant.participantId) didChangeSubscribeState to '\(subscribeState.text)'")
-
     }
 
     func stage(_ stage: IVSStage, participant: IVSParticipantInfo, didAdd streams: [IVSStageStream]) {
         print("ℹ participant \(participant.participantId) didAdd \(streams.count) streams")
 
         for stream in streams {
+            if let imageDevice = stream.device as? IVSImageDevice {
+                imageDevice.setOnFrameCallback { [weak self] frame in
+                    self?.onFrame(for: participant.participantId)
+                    imageDevice.setOnFrameCallback(nil)
+                }
+            }
+
             let username = participantUsers.first(where: { $0.participant == participant })?.username
             createRTCStats(for: stream, username: username)
         }
@@ -119,6 +126,12 @@ extension StageModel: IVSStageRenderer {
                 stream.delegate = self
                 data.setAudioStatsCallback(for: stream)
             }
+        }
+    }
+
+    func onFrame(for participantId: String) {
+        mutatingParticipant(participantId) { data in
+            data.videoReceivedAt = Date()
         }
     }
 
@@ -135,6 +148,7 @@ extension StageModel: IVSStageRenderer {
             data.streams.removeAll(where: { stream in
                 return oldUrns.contains(stream.device.descriptor().urn)
             })
+            data.videoReceivedAt = nil
         }
         delegate?.participantLeftOrStoppedPublishing(participant)
     }
