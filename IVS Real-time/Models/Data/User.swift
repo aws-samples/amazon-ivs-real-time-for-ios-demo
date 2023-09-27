@@ -34,7 +34,8 @@ class User: ObservableObject {
         didSet {
             if !isLocal, let videoRequestedAt = videoRequestedAt,
                 let diff = videoReceivedAt?.timeIntervalSince(videoRequestedAt) {
-                timeToVideo = "\(formatter.string(for: Double(diff)) ?? "") TTV"
+                timeToVideo = "\(numberFormatter.string(for: Float(diff)) ?? "") TTV"
+                NSLog("ℹ \(username) TTV \(diff)")
             }
         }
     }
@@ -86,7 +87,7 @@ class User: ObservableObject {
         return streams.lazy.compactMap { $0.device as? IVSImageDevice }.first
     }
 
-    private let formatter = NumberFormatter()
+    let numberFormatter = NumberFormatter()
     private var timer: Timer?
 
     var previewView: StageParticipantView {
@@ -107,9 +108,9 @@ class User: ObservableObject {
         self.isLocal = isLocal
         self.avatar = avatar
 
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        formatter.decimalSeparator = "."
+        numberFormatter.numberStyle = .decimal
+        numberFormatter.maximumFractionDigits = 2
+        numberFormatter.decimalSeparator = "."
     }
 
     required init(from decoder: Decoder) throws {
