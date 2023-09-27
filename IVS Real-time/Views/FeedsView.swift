@@ -145,7 +145,7 @@ struct FeedsView: View {
                             })
                             .modifier(PrimaryButton(color: Color("Red"), textColor: Color.white))
                     )
-                } else {
+                } else if !appModel.isLoading {
                     BottomSheetConfirmationView(
                         isPresent: $appModel.userWantsToLeaveStage,
                         title: "Leave current \(appModel.activeStage?.type == .audio ? "room" : "stage")",
