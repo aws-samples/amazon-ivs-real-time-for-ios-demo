@@ -111,7 +111,8 @@ extension StageModel: IVSStageRenderer {
         for stream in streams {
             if let imageDevice = stream.device as? IVSImageDevice {
                 imageDevice.setOnFrameCallback { [weak self] frame in
-                    self?.onFrame(for: participant.participantId)
+                    NSLog("ℹ \(Date()) received onFrameCallback, frame size: \(frame.size)")
+                    self?.onFrame(for: participant.participantId, date: Date())
                     imageDevice.setOnFrameCallback(nil)
                 }
             }
@@ -129,9 +130,9 @@ extension StageModel: IVSStageRenderer {
         }
     }
 
-    func onFrame(for participantId: String) {
+    func onFrame(for participantId: String, date: Date) {
         mutatingParticipant(participantId) { data in
-            data.videoReceivedAt = Date()
+            data.videoReceivedAt = date
         }
     }
 

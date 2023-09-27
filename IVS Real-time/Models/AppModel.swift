@@ -751,6 +751,10 @@ extension AppModel: StageModelDelegate {
         print("ℹ participant \(participant?.participantId ?? "nil") left or stopped publishing")
         if activeStageHostParticipant?.participantId == participant?.participantId {
             activeStageHostParticipant = nil
+            print("ℹ leaving stage because host participant left the stage")
+            leaveActiveStage { [weak self] in
+                self?.stagesModel.scroll(.down)
+            }
         }
 
         if activeStageSecondParticipant?.participantId == participant?.participantId {

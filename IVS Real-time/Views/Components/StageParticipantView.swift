@@ -36,9 +36,6 @@ struct StageParticipantView: View {
                                     }
                             }
                         }
-                        .onAppear {
-                            participant.videoRequestedAt = Date()
-                        }
                 }
             }
 

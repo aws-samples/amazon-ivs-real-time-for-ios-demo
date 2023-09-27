@@ -79,6 +79,7 @@ struct BottomSheetConfirmationView<Content: View>: View {
         .onAppear {
             withAnimation(.easeOut(duration: 0.3)) {
                 YOffset = 0
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
         }
     }
