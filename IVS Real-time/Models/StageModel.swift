@@ -468,8 +468,15 @@ class StageModel: NSObject, ObservableObject {
     private func parseBaseData(for stream: IVSStageStream, from stats: [String: [String: String]]) {
         let selectedCandidatePairId = stats["T01"]?["selectedCandidatePairId"] ?? ""
         let candidatePair = stats[selectedCandidatePairId]
-        let remoteInbound = stats["remote-inbound-rtp"]
-        let inbound = stats["inbound-rtp"]
+        var remoteInbound = stats["remote-inbound-rtp"]
+        var inbound = stats["inbound-rtp"]
+        stats.forEach { (key: String, value: [String : String]) in
+            if value["type"] == "remote-inbound-rtp" {
+                remoteInbound = stats[key]
+            } else if value["type"] == "inbound-rtp" {
+                inbound = stats[key]
+            }
+        }
 
         DispatchQueue.main.async {
             if let roundTripTime = Float(candidatePair?["currentRoundTripTime"] ?? "") {
@@ -492,8 +499,15 @@ class StageModel: NSObject, ObservableObject {
         print("ℹ VIDEO didGenerateRTCStats: \(stats)")
         parseBaseData(for: stream, from: stats)
 
-        let outbound = stats["outbound-rtp"]
-        let inbound = stats["inbound-rtp"]
+        var outbound = stats["outbound-rtp"]
+        var inbound = stats["inbound-rtp"]
+        stats.forEach { (key: String, value: [String : String]) in
+            if value["type"] == "inbound-rtp" {
+                inbound = stats[key]
+            } else if value["type"] == "outbound-rtp" {
+                outbound = stats[key]
+            }
+        }
 
         if let inbound = inbound {
             parseInbound(for: stream, inbound)

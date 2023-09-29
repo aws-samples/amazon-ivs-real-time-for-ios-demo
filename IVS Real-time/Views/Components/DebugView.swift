@@ -65,6 +65,7 @@ struct DebugView: View {
                                                       forPasteboardType: "public.plain-text")
                     }, label: {
                         Text("Copy to clipboard")
+                            .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                     })
@@ -75,6 +76,7 @@ struct DebugView: View {
                         dismiss()
                     }) {
                         Text("Dismiss")
+                            .foregroundColor(.black)
                             .frame(height: 50)
                     }
                     .modifier(PrimaryButton(color: .clear))
