@@ -713,12 +713,14 @@ extension AppModel: StageModelDelegate {
             }
 
             DispatchQueue.main.async {
-                if self.user.isHost {
-                    self.activeStageHostParticipant = self.user
-                    print("ℹ active stage host set to local user")
-                } else {
-                    self.activeStageSecondParticipant = self.user
-                    print("ℹ active 2nd participant set to local user")
+                withAnimation {
+                    if self.user.isHost {
+                        self.activeStageHostParticipant = self.user
+                        print("ℹ active stage host set to local user")
+                    } else {
+                        self.activeStageSecondParticipant = self.user
+                        print("ℹ active 2nd participant set to local user")
+                    }
                 }
             }
 
@@ -734,14 +736,21 @@ extension AppModel: StageModelDelegate {
             }
 
             DispatchQueue.main.async {
-                if username == self.activeStageHostUsername {
-                    self.activeStageHostParticipant = newUser
-                    print("ℹ active stage host set to new user")
-                    self.applyActiveVotingTally()
-                } else {
-                    self.activeStageSecondParticipant = newUser
-                    print("ℹ active 2nd participant set to new user")
-                    self.applyActiveVotingTally()
+
+                guard newUser.isPublishing else {
+                    return
+                }
+
+                withAnimation {
+                    if username == self.activeStageHostUsername {
+                        self.activeStageHostParticipant = newUser
+                        print("ℹ active stage host set to new user")
+                        self.applyActiveVotingTally()
+                    } else {
+                        self.activeStageSecondParticipant = newUser
+                        print("ℹ active 2nd participant set to new user")
+                        self.applyActiveVotingTally()
+                    }
                 }
             }
         }
@@ -750,7 +759,11 @@ extension AppModel: StageModelDelegate {
     func participantLeftOrStoppedPublishing(_ participant: IVSParticipantInfo?) {
         print("ℹ participant \(participant?.participantId ?? "nil") left or stopped publishing")
         if activeStageHostParticipant?.participantId == participant?.participantId {
-            activeStageHostParticipant = nil
+            DispatchQueue.main.async {
+                withAnimation {
+                    self.activeStageHostParticipant = nil
+                }
+            }
             print("ℹ leaving stage because host participant left the stage")
             leaveActiveStage { [weak self] in
                 self?.stagesModel.scroll(.down)
@@ -758,7 +771,11 @@ extension AppModel: StageModelDelegate {
         }
 
         if activeStageSecondParticipant?.participantId == participant?.participantId {
-            activeStageSecondParticipant = nil
+            DispatchQueue.main.async {
+                withAnimation {
+                    self.activeStageSecondParticipant = nil
+                }
+            }
         }
     }
 
@@ -770,8 +787,10 @@ extension AppModel: StageModelDelegate {
 
             endPublishingToStage {
                 DispatchQueue.main.async {
-                    self.activeStageHostParticipant = nil
-                    self.activeStageSecondParticipant = nil
+                    withAnimation {
+                        self.activeStageHostParticipant = nil
+                        self.activeStageSecondParticipant = nil
+                    }
                 }
             }
         }

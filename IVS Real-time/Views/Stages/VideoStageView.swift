@@ -16,11 +16,8 @@ struct VideoStageView: View {
         ZStack(alignment: .top) {
             if stage == appModel.activeStage {
                 switch stage.mode {
-                    case .none:
+                    case .none, .spot:
                         VideoView(stage: stage)
-                            .transition(.opacity)
-                    case .spot:
-                        SpotView(stage: stage)
                             .transition(.opacity)
                     case .pk:
                         PKView(stage: stage)
