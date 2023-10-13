@@ -12,7 +12,6 @@
 		4B10632E29D3203400242A05 /* AudioStageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10632D29D3203400242A05 /* AudioStageView.swift */; };
 		4B10633029D321E100242A05 /* StageOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10632F29D321E100242A05 /* StageOverlayView.swift */; };
 		4B10633229D40AED00242A05 /* StagesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10633129D40AED00242A05 /* StagesModel.swift */; };
-		4B10633429D41C9E00242A05 /* SpotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10633329D41C9E00242A05 /* SpotView.swift */; };
 		4B10633629D41CA600242A05 /* PKView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10633529D41CA600242A05 /* PKView.swift */; };
 		4B10633829D41CC600242A05 /* VideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B10633729D41CC600242A05 /* VideoView.swift */; };
 		4B10634129D45B0900242A05 /* RobotoMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4B10634029D45B0900242A05 /* RobotoMono-Bold.ttf */; };
@@ -74,7 +73,6 @@
 		4B10632D29D3203400242A05 /* AudioStageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStageView.swift; sourceTree = "<group>"; };
 		4B10632F29D321E100242A05 /* StageOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageOverlayView.swift; sourceTree = "<group>"; };
 		4B10633129D40AED00242A05 /* StagesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StagesModel.swift; sourceTree = "<group>"; };
-		4B10633329D41C9E00242A05 /* SpotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotView.swift; sourceTree = "<group>"; };
 		4B10633529D41CA600242A05 /* PKView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKView.swift; sourceTree = "<group>"; };
 		4B10633729D41CC600242A05 /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
 		4B10633F29D45ACA00242A05 /* IVS-Real-time-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "IVS-Real-time-Info.plist"; sourceTree = SOURCE_ROOT; };
@@ -256,7 +254,6 @@
 				4B10632D29D3203400242A05 /* AudioStageView.swift */,
 				4B10632929D3200200242A05 /* VideoStageView.swift */,
 				4B10633729D41CC600242A05 /* VideoView.swift */,
-				4B10633329D41C9E00242A05 /* SpotView.swift */,
 				4B10633529D41CA600242A05 /* PKView.swift */,
 			);
 			path = Stages;
@@ -452,7 +449,6 @@
 				4BE1A2F429E5564F0017BCC2 /* ReactionView.swift in Sources */,
 				4BB7960E29D6F015005A4521 /* UIColor.swift in Sources */,
 				4B10635129D46AB000242A05 /* ChatView.swift in Sources */,
-				4B10633429D41C9E00242A05 /* SpotView.swift in Sources */,
 				4B10633029D321E100242A05 /* StageOverlayView.swift in Sources */,
 				4B10632E29D3203400242A05 /* AudioStageView.swift in Sources */,
 				4B9210122A1B4738001AA945 /* UISliderView.swift in Sources */,
